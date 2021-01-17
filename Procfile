@@ -1,1 +1,1 @@
-web: gunicorn main1.16:server
+web: gunicorn venv/main1.16:server
