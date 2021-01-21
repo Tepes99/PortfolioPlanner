@@ -32,7 +32,7 @@ app.layout = dbc.Container(html.Div([
     dcc.Markdown('''
     # Portfolio planner
 
-    ###### In this web app you can build custom portfolio and make projection of it's expected returns, inspect it's composition and view characteristics.
+    ###### In this web app you can build custom portfolio and make projection of its expected returns, inspect its composition and view characteristics.
 
     #### How to use:
     1. Write the ticker of the asset and purchase amount you want to add/remove to given input fields. Site uses [yahoo finance](https://finance.yahoo.com) API,
