@@ -19,7 +19,6 @@ def interestRateConverter(annualRate):
     return dailyRate
 
 
-#This function creates the dataframe for real estate assets for given period and growth rate in value
 def createAsset(value, growthRate,monthlyPayment, startOfOwnership, endOfOwnership, assetName):
     """
     Returns pandas DataFrame for the given asset.
@@ -112,51 +111,55 @@ def addAsset(assetSymbol, purchaseAmount): #, fromDate, toDate):
     start = end + dt.timedelta(days= -5*365.25)
 
     #Asset data scraping
-    asset = web.DataReader(assetSymbol, 'yahoo', start, end)
-    asset.rename(columns={"Adj Close":assetSymbol}, inplace= True)
-    asset = asset[assetSymbol]
-    assetReturnsList = asset.pct_change()
+    try:
+        asset = web.DataReader(assetSymbol, 'yahoo', start, end)
+        asset.rename(columns={"Adj Close":assetSymbol}, inplace= True)
+        asset = asset[assetSymbol]
+        assetReturnsList = asset.pct_change()
 
-    assetDates = list(asset.index)
-    assetStart = assetDates[0]
-    assetEnd = assetDates[-1]
-    #Market Index data scraping
-    ACWI = web.DataReader("ACWI", 'yahoo', start, end)
-    ACWI.rename(columns={"Adj Close":"ACWI"}, inplace= True)
-    ACWI = pd.DataFrame(ACWI["ACWI"])
+        assetDates = list(asset.index)
+        assetStart = assetDates[0]
+        assetEnd = assetDates[-1]
+        #Market Index data scraping
+        ACWI = web.DataReader("ACWI", 'yahoo', start, end)
+        ACWI.rename(columns={"Adj Close":"ACWI"}, inplace= True)
+        ACWI = pd.DataFrame(ACWI["ACWI"])
 
-    #Risk free rate as 13-Week US Treasury
-    riskFreeRate = web.DataReader("^IRX", 'yahoo', end+dt.timedelta(days= -5) , end)
-    riskFreeRate.rename(columns={"Adj Close":"Risk Free Rate"}, inplace= True)
-    riskFreeRate = float(pd.DataFrame(riskFreeRate["Risk Free Rate"]).iloc[-1])
+        #Risk free rate as 13-Week US Treasury
+        riskFreeRate = web.DataReader("^IRX", 'yahoo', end+dt.timedelta(days= -5) , end)
+        riskFreeRate.rename(columns={"Adj Close":"Risk Free Rate"}, inplace= True)
+        riskFreeRate = float(pd.DataFrame(riskFreeRate["Risk Free Rate"]).iloc[-1])
 
-    
-    ACWI.insert(1, assetSymbol, asset)  #data table including asset and ACWI
-    dataTable = ACWI
-    #Variables for calculating the beta
-    volatilities = dataTable.pct_change().std()*np.sqrt(252)
-    correlation = dataTable.corr().iloc[0,1]
+        
+        ACWI.insert(1, assetSymbol, asset)  #data table including asset and ACWI
+        dataTable = ACWI
+        #Variables for calculating the beta
+        volatilities = dataTable.pct_change().std()*np.sqrt(252)
+        correlation = dataTable.corr().iloc[0,1]
 
-    beta = correlation*(volatilities[1]/volatilities[0])
-    
-    assetPeriodLen = len(pd.date_range(assetStart,assetEnd))
-    assetReturns = ((asset[-1]/asset[0])**(1/(assetPeriodLen/365.25))-1)*100    #Geometric Mean
-    indexReturns = ((dataTable.iloc[-1,0]/dataTable.iloc[0,0])**(1/5)-1)*100              #Geometric Mean
+        beta = correlation*(volatilities[1]/volatilities[0])
+        
+        assetPeriodLen = len(pd.date_range(assetStart,assetEnd))
+        assetReturns = ((asset[-1]/asset[0])**(1/(assetPeriodLen/365.25))-1)*100    #Geometric Mean
+        indexReturns = ((dataTable.iloc[-1,0]/dataTable.iloc[0,0])**(1/5)-1)*100              #Geometric Mean
 
-    assetReturns = assetReturns + ((volatilities[1]**2)/2)  #Arithmetic mean
-    indexReturns = indexReturns + ((volatilities[0]**2)/2)  #Arithmetic mean
+        assetReturns = assetReturns + ((volatilities[1]**2)/2)  #Arithmetic mean
+        indexReturns = indexReturns + ((volatilities[0]**2)/2)  #Arithmetic mean
 
-    assetCAPM = beta*(indexReturns-riskFreeRate) + riskFreeRate
-    
-    asset = pd.DataFrame({
-        "purchaseAmount":purchaseAmount,
-        "assetReturns":assetReturns,
-        "volatility": volatilities[1],
-        "indexReturns":indexReturns,
-        "assetCAPM":assetCAPM,
-        "beta":beta,
-        "riskFreeRate":riskFreeRate
-    },index= [assetSymbol])
+        assetCAPM = beta*(indexReturns-riskFreeRate) + riskFreeRate
+        
+        asset = pd.DataFrame({
+            "purchaseAmount":purchaseAmount,
+            "assetReturns":assetReturns,
+            "volatility": volatilities[1],
+            "indexReturns":indexReturns,
+            "assetCAPM":assetCAPM,
+            "beta":beta,
+            "riskFreeRate":riskFreeRate
+        },index= [assetSymbol])
+    except:
+        asset = assetSymbol
+        assetReturnsList = []
     return asset, assetReturnsList
 
 
@@ -168,6 +171,7 @@ def formPortfolio(assetList, assetsReturns):
     portfolio = pd.DataFrame(columns= ("purchaseAmount", "assetReturns","volatility", "indexReturns", "assetCAPM", "beta", "riskFreeRate"))
     for asset in assetList:
         portfolio = portfolio.append(asset, ignore_index= False)
+        
     
     portfolio["Contribution"] = (portfolio["purchaseAmount"] / portfolio["purchaseAmount"].sum())
     
@@ -206,12 +210,16 @@ def callPortfolio(assetList):
     ]
     """
     assets=[]
+    notFoundAssets=[]
     assetsReturns=pd.DataFrame()
     for asset in assetList:
         asset, assetReturnsList = addAsset(*asset)
-        assets.append(asset)
-        assetsReturns.insert(0,assetReturnsList.name,assetReturnsList)
-    return formPortfolio(assets,assetsReturns)
+        if len(assetReturnsList):
+            assets.append(asset)
+            assetsReturns.insert(0,assetReturnsList.name,assetReturnsList)
+        else:
+            notFoundAssets.append(asset)
+    return formPortfolio(assets,assetsReturns), notFoundAssets
 
 def deleteAsset(df, ticker):
     """

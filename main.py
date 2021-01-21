@@ -11,20 +11,38 @@ from dash.dependencies import Input, Output, State
 import dash_table
 import plotly.express as px
 import customAddIns as cstm
-import startup
 import dash_bootstrap_components as dbc
 import GBMconfidence as GBM
 import plotly.graph_objects as go
 import plotly.express as px
 
 
-startup.createDataTable()
+table = pd.DataFrame(columns=["Ticker","Amount"])
+table.to_csv("dataTable.csv",index=False)
 
 app = dash.Dash(__name__, prevent_initial_callbacks=True, external_stylesheets=[dbc.themes.LUX])
 server = app.server
 
 app.layout = dbc.Container(html.Div([
 
+
+    dcc.Markdown('''
+    # Portfolio planner
+
+    ###### In this web app you can build custom portfolio and make projection of it's future performance.
+
+    #### How to use:
+    1. Write the ticker of the asset and purchase amount you want to add/remove to given input fields. Site uses [yahoo finance](https://finance.yahoo.com) API,
+    so you need to use tickers they use, like F = Ford Motor Company, FORTUM.HE = Fortum Oyj, TSLA = Tesla, Inc. and so on.
+
+    2. After that you can use the buttons below to either add the chosen amount of given asset to your portfolio, remove given asset or clear the entire portfolio.
+
+    3. When you are satisfied with your asset choises, it is time to choose how far into the future you want the projection made and the confidence level you prefer for it.
+    Press CREATE PROJECTION and wait for the graphs to load. This may take couple seconds. 
+    
+    NOTE: if any of the tickers can't be found from yahoo an error message will be shown.
+
+    '''),
     dbc.Row(dbc.Col(html.Div(["Stock ticker: ",
         dbc.Input(id="ticker",value="SPY",type= "text")]),
                 width=12
@@ -58,6 +76,7 @@ app.layout = dbc.Container(html.Div([
 
     dbc.Button(id='createPortfolio', n_clicks=0, children='Create Projection'),
 
+    html.Div(id="feedback"),
     
 
     dbc.Row([
@@ -128,6 +147,7 @@ def addAssetToList(add, delete, clear, ticker, amount):
     Output(component_id= "graph", component_property= "figure"),
     Output(component_id= "breakdown", component_property= "children"),
     Output(component_id="pie-chart", component_property="figure"),
+    Output(component_id= "feedback", component_property= "children"),
     [Input('createPortfolio', 'n_clicks'),
     State(component_id= "years", component_property= "value"),
     State(component_id= "confidence", component_property= "value")])
@@ -138,7 +158,7 @@ def updatePlot(update, years, confidence):
     df = pd.read_csv("dataTable.csv")
 
     listOfAssets = list(df.itertuples(index=False, name=None))
-    portfolio = cstm.callPortfolio(listOfAssets)
+    portfolio, notFoundAssets = cstm.callPortfolio(listOfAssets)
     growthRate = portfolio.loc["Portfolio","assetCAPM"]
     purchaseAmount = portfolio.loc["Portfolio","purchaseAmount"]
     volatility = portfolio.loc["Portfolio","volatility"]
@@ -206,20 +226,6 @@ def updatePlot(update, years, confidence):
     portfolio = portfolio.round(4)
     pieData = portfolio.iloc[:-1,:]
 
-    """
-    pie = px.pie(
-        pieData,
-        labels= pieData.index,
-        values= "Contribution",
-        hover_name= pieData.index,
-        hover_data= ["assetCAPM", "volatility"],
-        custom_data= ["assetCAPM", "volatility"],
-        #custom_data=["assetCAPM", "volatility", "beta"],
-        title= "Portfolio composition",
-    )
-    
-    
-    """
     pie = go.Figure(go.Pie(
         name = "Portfolio composition",
         values = pieData['Contribution'],
@@ -232,7 +238,11 @@ def updatePlot(update, years, confidence):
         hovertemplate = "Expected return:%{customdata}: <br>Contribution: %{value} </br>Volatility:%{label}<br>Ticker:%{text}",
         
     ))
-    
+    if notFoundAssets != []:
+        feedback = "`Error: Data for asset(s) with tickers {} could not be found, and are excluded from calculations.`".format(str(notFoundAssets))
+    else:
+        feedback = ""
+    feedback = dcc.Markdown(feedback)
     portfolio.reset_index(inplace=True)
     portfolio = portfolio.rename(columns = {'index':'Ticker'})
     return fig, dbc.Table.from_dataframe(
@@ -241,7 +251,7 @@ def updatePlot(update, years, confidence):
         bordered=True,
         hover=True,
         size='sm'
-        ), pie
+        ), pie, feedback
 
 if __name__ == '__main__':
     app.run_server(debug=True)
