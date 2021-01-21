@@ -17,10 +17,13 @@ import plotly.graph_objects as go
 import plotly.express as px
 
 
-table = pd.DataFrame(columns=["Ticker","Amount"])
+table = pd.DataFrame({
+    "Ticker":["AAPL","GE"],
+    "Amount":[10000, 3500]
+},index=range(2))
 table.to_csv("dataTable.csv",index=False)
 
-app = dash.Dash(__name__, prevent_initial_callbacks=True, external_stylesheets=[dbc.themes.LUX])
+app = dash.Dash(__name__, prevent_initial_callbacks=False, external_stylesheets=[dbc.themes.LUX])
 server = app.server
 
 app.layout = dbc.Container(html.Div([
@@ -29,7 +32,7 @@ app.layout = dbc.Container(html.Div([
     dcc.Markdown('''
     # Portfolio planner
 
-    ###### In this web app you can build custom portfolio and make projection of it's future performance.
+    ###### In this web app you can build custom portfolio and make projection of it's expected returns, inspect it's composition and view characteristics.
 
     #### How to use:
     1. Write the ticker of the asset and purchase amount you want to add/remove to given input fields. Site uses [yahoo finance](https://finance.yahoo.com) API,
@@ -55,6 +58,9 @@ app.layout = dbc.Container(html.Div([
     dbc.Button(id='deleteAssetButton', n_clicks=0, children='Delete Asset'),
     dbc.Button(id='clearButton', n_clicks=0, children='Clear Portfolio'),
 
+    dcc.Markdown('''
+    ###### Chosen assets:
+    '''),
     dbc.Row(dbc.Col(html.Div(id="components"),
                 width=12
     )),
@@ -80,13 +86,13 @@ app.layout = dbc.Container(html.Div([
     
 
     dbc.Row([
-        dbc.Col(dcc.Graph(id="graph"),
+        dbc.Col(dbc.Spinner(children=[dcc.Graph(id="graph")], color="success"),
                 width=6),
-        dbc.Col(dcc.Graph(id="pie-chart"),
+        dbc.Col(dbc.Spinner(children=[dcc.Graph(id="pie-chart")], color="success"),
                 width=6)
     ]),
 
-    dbc.Row(dbc.Col(html.Div(id="breakdown"),
+    dbc.Row(dbc.Col(dbc.Spinner(children=[html.Div(id="breakdown")], color="success"),
                 width=12)
     ),
    
@@ -244,7 +250,14 @@ def updatePlot(update, years, confidence):
         feedback = ""
     feedback = dcc.Markdown(feedback)
     portfolio.reset_index(inplace=True)
-    portfolio = portfolio.rename(columns = {'index':'Ticker'})
+    portfolio = portfolio.rename(columns = {
+        'index':'Ticker',
+        'purchaseAmount':'Purchase Amount',
+        'assetReturns':'Historical Returns',
+        'assetCAPM':'Expected Returns',
+        })
+    del portfolio["indexReturns"]
+    del portfolio["riskFreeRate"]
     return fig, dbc.Table.from_dataframe(
         portfolio,
         striped=True,
