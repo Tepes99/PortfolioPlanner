@@ -1,5 +1,4 @@
 import numpy as np
-import plotly.graph_objects as go
 
 def GBM(currentPrice, expectedReturn, volatility, periodLenghtInYears, z):
     """
@@ -28,9 +27,7 @@ def GBMP(currentPrice, expectedReturn, volatility, periodLenghtInYears, z):
  
     futurePricesLn = np.array([np.log(currentPrice)]*periodLenghtinDays)
     confidenceIntervalsLn = np.array([z*volatility] * periodLenghtinDays)
-    #futurePricesLn = np.multiply(futurePricesLn, (np.divide(np.arange(1,periodLenghtinDays+1), 365.25)))
     futurePricesLn = futurePricesLn + (np.arange(1, periodLenghtinDays+1)/365.25)*(expectedReturn - (volatility**2)/2)
-    #confidenceIntervalsLn = np.multiply(confidenceIntervalsLn ,np.sqrt(np.divide(np.arange(1,periodLenghtinDays+1), 365.25)))
     confidenceIntervalsLn = confidenceIntervalsLn * np.sqrt(np.arange(1,periodLenghtinDays+1)/365.25)
     futurePrices = np.exp(futurePricesLn)
     confidenceIntervalLow = np.exp(futurePricesLn - confidenceIntervalsLn)

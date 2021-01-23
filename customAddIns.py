@@ -19,84 +19,8 @@ def interestRateConverter(annualRate):
     return dailyRate
 
 
-def createAsset(value, growthRate,monthlyPayment, startOfOwnership, endOfOwnership, assetName):
+def addAsset(assetSymbol, purchaseAmount):
     """
-    Returns pandas DataFrame for the given asset.
-
-    value: float
-
-    growthRate: float
-
-    monthlyPayment: float
-
-    assetName: str
-
-    Dates: tuple (YYYY,MM,DD)
-
-    Example: 
-    House = createAsset(value= 100000,growthRate= 2,monthlyPayment= 200,startOfOwnership=(2020,10,18),endOfOwnership=(2020,11,18),assetName="House")
-
-    """
-    if value == str:
-        value = 0.0
-    #Setting the daterange user wants for the asset
-    startOfOwnership = dt.datetime(*startOfOwnership)
-    endOfOwnership = dt.datetime(*endOfOwnership)
-    dates = pd.date_range(startOfOwnership,endOfOwnership).tolist()
-    
-    #Daily compunding interest rate
-    dailyRate = interestRateConverter(growthRate)
-    dailyRate += 1
-
-    values = pd.Series([float(value)]*len(dates),index= dates)
-    #DataFrame for the asset
-    
-    i = 1
-    j = 0
-    m = (365.25/12)
-    while i < len(dates):
-        
-        values[i] = (values[i-1]*dailyRate)
-        if j < int(i/m):
-            values[i] += monthlyPayment
-        j = int(i/m)
-        i += 1
-    
-    #Values Series for the timeframe
-    asset = pd.DataFrame({
-    assetName: values
-    })
-    asset.index = dates
-    asset.index.name = "Date"
-    
-    return asset
-
-
-
-def getAsset(assetSymbol, fromDate, toDate):
-    """
-    Returns pandas Series object of the wanted asset from Yahoo
-
-    assetSymbol: str
-
-    fromDate: tuple (YYYY,MM,DD)
-
-    toDate: tuple (YYYY,MM,DD)
-
-    Example: TSLA = getAsset("TSLA", (2016,10,21), (2020,10,21))
-    """
-    fromDate = dt.datetime(*fromDate)
-    toDate = dt.datetime(*toDate)
-
-    asset = web.DataReader(assetSymbol, 'yahoo', fromDate, toDate)
-    asset.rename(columns={"Adj Close":assetSymbol}, inplace= True)
-    return asset[assetSymbol]
-
-
-def addAsset(assetSymbol, purchaseAmount): #, fromDate, toDate):
-    """
-    Returns assets volatility and expected return for given period
-
     assetSymbol: str
 
     purchaseAmount: float or integer
@@ -141,7 +65,7 @@ def addAsset(assetSymbol, purchaseAmount): #, fromDate, toDate):
         
         assetPeriodLen = len(pd.date_range(assetStart,assetEnd))
         assetReturns = ((asset[-1]/asset[0])**(1/(assetPeriodLen/365.25))-1)*100    #Geometric Mean
-        indexReturns = ((dataTable.iloc[-1,0]/dataTable.iloc[0,0])**(1/5)-1)*100              #Geometric Mean
+        indexReturns = ((dataTable.iloc[-1,0]/dataTable.iloc[0,0])**(1/5)-1)*100
 
         assetReturns = assetReturns + ((volatilities[1]**2)/2)  #Arithmetic mean
         indexReturns = indexReturns + ((volatilities[0]**2)/2)  #Arithmetic mean
@@ -250,18 +174,3 @@ def combineDublicateTickers(df,ticker):
             },index=[len(dfi)])
         df = df.append(dfi)
     return df
-"""
-    if (len(df[((df.Ticker == ticker))].index)) > 0:
-    #if ticker in df:
-        dfi = df[df['Ticker'].str.contains(ticker)]["Amount"]
-        print(dfi)
-        dfi = list(dfi)
-        dfi = list(map(int, dfi)) 
-        df = df[df.Ticker != ticker]
-        dfi= pd.DataFrame({
-            "Ticker": ticker,
-            "Amount": sum(dfi),
-            },index=[len(df)])
-        df = df.append(dfi)
-    return df
-"""

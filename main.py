@@ -1,5 +1,5 @@
 """
-The main operating file of the Wealth Planner Dash App
+The main operating file of the Portfolio Planner Dash App
 """
 import pandas as pd
 import numpy as np
@@ -16,13 +16,14 @@ import GBMconfidence as GBM
 import plotly.graph_objects as go
 import plotly.express as px
 
-
+#Makes the default portfolio and csv file
 table = pd.DataFrame({
     "Ticker":["AAPL","GE"],
     "Amount":[10000, 3500]
 },index=range(2))
 table.to_csv("dataTable.csv",index=False)
 
+#Start of the web app configuration and layout
 app = dash.Dash(__name__, prevent_initial_callbacks=False, external_stylesheets=[dbc.themes.LUX])
 server = app.server
 
@@ -95,7 +96,22 @@ app.layout = dbc.Container(html.Div([
     dbc.Row(dbc.Col(dbc.Spinner(children=[html.Div(id="breakdown")], color="success"),
                 width=12)
     ),
-   
+
+    dcc.Markdown('''
+    ###### Author
+    Teemu Saha.
+    [LinkedIn](https://linkedin.com/in/teemu-saha-18090b19b)
+    [GitHub](https://github.com/Tepes99)
+    
+    ###### The math
+
+    1. Expected returns are based on Capital Asset Pricing Model. [AWCI](https://www.msci.com/acwi) is used as a market portfolio.
+
+    2. Daily data from  [yahoo finance](https://finance.yahoo.com) is used for the calculations.
+
+    3. Confidence levels are based on log-normal distribution.
+
+    '''),
 
 
 
@@ -105,7 +121,7 @@ app.layout = dbc.Container(html.Div([
 fluid=True)
 
  
-
+#Callback for the portfolio editing
 @app.callback(
     Output(component_id= "components", component_property= "children"),
     [Input('addAssetButton', 'n_clicks')],
@@ -149,6 +165,7 @@ def addAssetToList(add, delete, clear, ticker, amount):
         size='sm'
         )
 
+#Callback for the graphs and data table
 @app.callback(
     Output(component_id= "graph", component_property= "figure"),
     Output(component_id= "breakdown", component_property= "children"),
@@ -161,11 +178,10 @@ def addAssetToList(add, delete, clear, ticker, amount):
 
 def updatePlot(update, years, confidence):
 
-    df = pd.read_csv("dataTable.csv")
-
-    listOfAssets = list(df.itertuples(index=False, name=None))
-    portfolio, notFoundAssets = cstm.callPortfolio(listOfAssets)
-    growthRate = portfolio.loc["Portfolio","assetCAPM"]
+    df = pd.read_csv("dataTable.csv")                               #Reads the user inputted portfolio for
+    listOfAssets = list(df.itertuples(index=False, name=None))      #the functions that calculate the data
+    portfolio, notFoundAssets = cstm.callPortfolio(listOfAssets)    #for outputs
+    growthRate = portfolio.loc["Portfolio","assetCAPM"]             
     purchaseAmount = portfolio.loc["Portfolio","purchaseAmount"]
     volatility = portfolio.loc["Portfolio","volatility"]
     #dates
@@ -244,6 +260,7 @@ def updatePlot(update, years, confidence):
         hovertemplate = "Expected return:%{customdata}: <br>Contribution: %{value} </br>Volatility:%{label}<br>Ticker:%{text}",
         
     ))
+    #feedback to inform user of possible failure of data scraping
     if notFoundAssets != []:
         feedback = "`Error: Data for asset(s) with tickers {} could not be found, and are excluded from calculations.`".format(str(notFoundAssets))
     else:
