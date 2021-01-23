@@ -98,10 +98,6 @@ app.layout = dbc.Container(html.Div([
     ),
 
     dcc.Markdown('''
-    ###### Author
-    Teemu Saha.
-    [LinkedIn](https://linkedin.com/in/teemu-saha-18090b19b)
-    [GitHub](https://github.com/Tepes99)
     
     ###### The math
 
@@ -109,7 +105,12 @@ app.layout = dbc.Container(html.Div([
 
     2. Daily data from  [yahoo finance](https://finance.yahoo.com) is used for the calculations.
 
-    3. Confidence levels are based on log-normal distribution.
+    3. Confidence levels follow log-normal distribution.
+
+    
+    @Teemu Saha.
+    [LinkedIn](https://linkedin.com/in/teemu-saha-18090b19b)
+    [GitHub](https://github.com/Tepes99)
 
     '''),
 
@@ -134,7 +135,7 @@ fluid=True)
 
 def addAssetToList(add, delete, clear, ticker, amount):
     assetList = pd.read_csv("dataTable.csv")
-
+    ticker = ticker.upper()
     #asset to be added
     asset = pd.DataFrame({
         "Ticker": ticker,
