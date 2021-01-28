@@ -33,18 +33,18 @@ app.layout = dbc.Container(html.Div([
     dcc.Markdown('''
     # Portfolio planner
 
-    ###### In this web app you can build custom portfolio and make projection of its expected returns, inspect its composition and view characteristics.
+    ###### In this web app you can build a custom portfolio, make a projection of its expected returns, inspect its composition and view its characteristics.
 
     #### How to use:
     1. Write the ticker of the asset and purchase amount you want to add/remove to given input fields. Site uses [yahoo finance](https://finance.yahoo.com) API,
     so you need to use tickers they use, like F = Ford Motor Company, FORTUM.HE = Fortum Oyj, TSLA = Tesla, Inc. and so on.
 
-    2. After that you can use the buttons below to either add the chosen amount of given asset to your portfolio, remove given asset or clear the entire portfolio.
+    2. Use the ”add” and ”remove” buttons to choose your selected assets to your portfolio. You can also clear your selections with the ”clear” button.
 
     3. When you are satisfied with your asset choises, it is time to choose how far into the future you want the projection made and the confidence level you prefer for it.
     Press CREATE PROJECTION and wait for the graphs to load. This may take couple seconds. 
     
-    NOTE: if any of the tickers can't be found from yahoo an error message will be shown.
+    NOTE: If any of the tickers can't be found from yahoo an error message will appear.
 
     '''),
     dbc.Row(dbc.Col(html.Div(["Stock ticker: ",
@@ -101,7 +101,7 @@ app.layout = dbc.Container(html.Div([
     
     ###### The math
 
-    1. Expected returns are based on Capital Asset Pricing Model. [AWCI](https://www.msci.com/acwi) is used as a market portfolio.
+    1. Expected returns are based on the Capital Asset Pricing Model. [AWCI](https://www.msci.com/acwi) is used as a market portfolio.
 
     2. Daily data from  [yahoo finance](https://finance.yahoo.com) is used for the calculations.
 
